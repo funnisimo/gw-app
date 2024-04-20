@@ -1,0 +1,54 @@
+{
+  "name": "gw-app",
+  "version": "2.0.0",
+  "main": "dist/gw-app.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "jsdelivr": "dist/gw-app.js",
+  "scripts": {
+    "compile": "tsc --build tsconfig.json",
+    "bundle": "./scripts/build.js",
+    "copy": "cp dist/gw-app.* docs/js",
+    "build": "npm run bundle && npm run copy",
+    "serve": "cd docs && http-server",
+    "test": "vitest"
+  },
+  "description": "Application framework for games using gw-utils and gw-canvas.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funnisimo/gw-app.git"
+  },
+  "keywords": [
+    "webgl",
+    "roguelike",
+    "app"
+  ],
+  "author": "Funnisimo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/funnisimo/gw-app/issues"
+  },
+  "homepage": "https://github.com/funnisimo/gw-app#readme",
+  "devDependencies": {
+    "@babel/types": "^7.24.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "glob": "^10.3.12",
+    "http-server": "^14.1.1",
+    "jest-extended": "^4.0.2",
+    "rollup": "^4.14",
+    "rollup-plugin-dts": "^6.1.0",
+    "terminal-kit": "^3.1.1",
+    "tslib": "^2.6.2",
+    "typescript": "^5.4.4",
+    "vitest": "^1.4.0"
+  },
+  "dependencies": {
+    "gw-canvas": "file:../gw-canvas/dist",
+    "gw-ecs": "file:../gw-ecs/dist",
+    "gw-utils": "file:../gw-utils/dist"
+  }
+}
