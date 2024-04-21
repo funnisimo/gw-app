@@ -1,350 +1,351 @@
-import 'jest-extended';
-import * as Tween from './tween';
+import { expect, test, describe, vi, beforeEach } from "vitest";
+import "jest-extended";
+import * as Tween from "./tween";
 
-describe('Tween', () => {
-    test('tick before start', () => {
-        const obj = { x: 0, y: 0 };
-        const startCb = jest.fn();
-        const tween = Tween.make(obj)
-            .duration(1000)
-            .to({
-                x: 10,
-            })
-            .onStart(startCb);
+describe("Tween", () => {
+  test("tick before start", () => {
+    const obj = { x: 0, y: 0 };
+    const startCb = vi.fn();
+    const tween = Tween.make(obj)
+      .duration(1000)
+      .to({
+        x: 10,
+      })
+      .onStart(startCb);
 
-        expect(tween.isRunning()).toBeFalsy();
-        tween.update(100);
-        expect(tween.isRunning()).toBeFalsy();
-        expect(startCb).not.toHaveBeenCalled();
+    expect(tween.isRunning()).toBeFalsy();
+    tween.update(100);
+    expect(tween.isRunning()).toBeFalsy();
+    expect(startCb).not.toHaveBeenCalled();
+  });
+
+  test("function for goal value", () => {
+    const fn = vi.fn().mockReturnValue(10);
+    const obj = { x: 0, y: 0 };
+    const tween = Tween.make(obj)
+      .duration(1000)
+      .to({
+        x: fn,
+      })
+      .start();
+
+    expect(tween.isRunning()).toBeTruthy();
+    while (tween.isRunning()) {
+      tween.update(100);
+    }
+    expect(obj.x).toEqual(10);
+  });
+
+  test("dynamic goal value", () => {
+    const goal = { x: 8 };
+    const obj = { x: 0, y: 0 };
+    const tween = Tween.make(obj).duration(1000).to(goal, true).start();
+
+    expect(tween.isRunning()).toBeTruthy();
+    while (tween.isRunning()) {
+      tween.update(100);
+      goal.x = 10;
+    }
+    expect(obj.x).toEqual(10);
+  });
+
+  test("finish", () => {
+    const obj = { x: 0, y: 0 };
+    const finishCb = vi.fn().mockResolvedValue(123);
+    const tween = Tween.make(obj)
+      .to({
+        x: 10,
+      })
+      .duration(1000)
+      .onFinish(finishCb);
+
+    tween.start();
+    while (tween.isRunning()) {
+      tween.update(100);
+    }
+
+    expect(finishCb).toHaveBeenCalledWith(obj, true);
+  });
+
+  test("basic", () => {
+    const obj = { x: 0, y: 0 };
+    const tween = Tween.make(obj);
+    expect(tween).toBeInstanceOf(Tween.Tween);
+
+    tween
+      .to({
+        x: 10,
+      })
+      .duration(1000);
+
+    expect(tween._goal.x).toEqual(10);
+    expect(tween._start.x).toEqual(0);
+    expect(tween.duration()).toEqual(1000);
+
+    expect(tween.isRunning()).toBeFalsy();
+    tween.start();
+    expect(tween.isRunning()).toBeTruthy();
+
+    tween.update(50);
+    expect(obj.x).toEqual(1);
+    tween.update(50);
+    expect(obj.x).toEqual(1);
+    tween.update(400);
+    expect(obj.x).toEqual(5);
+    tween.update(500);
+    expect(obj.x).toEqual(10);
+
+    expect(tween.isRunning()).toBeFalsy();
+  });
+
+  test("update", () => {
+    const obj = { x: 0, y: 0 };
+    const updateCb = vi.fn();
+    const tween = Tween.make(obj)
+      .to({
+        x: 10,
+      })
+      .duration(1000)
+      .onUpdate(updateCb);
+    tween.start();
+
+    while (tween.isRunning()) {
+      tween.update(50);
+    }
+
+    // only called when there is a change
+    expect(updateCb).toHaveBeenCalledTimes(10);
+  });
+
+  test("start twice", () => {
+    const obj = { x: 0, y: 0 };
+    const tw = Tween.make(obj).to({ x: 10 }).duration(100);
+    tw.start();
+
+    while (tw.isRunning()) {
+      tw.update(50);
+    }
+
+    expect(obj.x).toEqual(10);
+
+    obj.x = 20;
+    tw.start();
+
+    while (tw.isRunning()) {
+      tw.update(50);
+    }
+
+    expect(obj.x).toEqual(10);
+  });
+
+  test("repeat", () => {
+    const obj = { x: 0, y: 0 };
+    const tween = Tween.make(obj);
+    expect(tween).toBeInstanceOf(Tween.Tween);
+
+    tween
+      .to({
+        x: 10,
+      })
+      .duration(1000)
+      .repeat(3);
+
+    expect(tween.repeat()).toEqual(3);
+
+    const cbStart = vi.fn().mockImplementation((o) => {
+      expect(o.x).toEqual(0);
     });
+    tween.onStart(cbStart);
 
-    test('function for goal value', () => {
-        const fn = jest.fn().mockReturnValue(10);
-        const obj = { x: 0, y: 0 };
-        const tween = Tween.make(obj)
-            .duration(1000)
-            .to({
-                x: fn,
-            })
-            .start();
-
-        expect(tween.isRunning()).toBeTruthy();
-        while (tween.isRunning()) {
-            tween.update(100);
-        }
-        expect(obj.x).toEqual(10);
+    const cbRepeat = vi.fn().mockImplementation((o) => {
+      expect(o.x).toEqual(0); // resets to starting value
     });
+    tween.onRepeat(cbRepeat);
 
-    test('dynamic goal value', () => {
-        const goal = { x: 8 };
-        const obj = { x: 0, y: 0 };
-        const tween = Tween.make(obj).duration(1000).to(goal, true).start();
-
-        expect(tween.isRunning()).toBeTruthy();
-        while (tween.isRunning()) {
-            tween.update(100);
-            goal.x = 10;
-        }
-        expect(obj.x).toEqual(10);
+    const cbFinish = vi.fn().mockImplementation((o) => {
+      expect(o.x).toEqual(10);
     });
+    tween.onFinish(cbFinish);
 
-    test('finish', () => {
-        const obj = { x: 0, y: 0 };
-        const finishCb = jest.fn().mockResolvedValue(123);
-        const tween = Tween.make(obj)
-            .to({
-                x: 10,
-            })
-            .duration(1000)
-            .onFinish(finishCb);
+    tween.start();
+    while (tween.isRunning()) {
+      tween.update(100);
+    }
 
-        tween.start();
-        while (tween.isRunning()) {
-            tween.update(100);
-        }
+    expect(cbStart).toHaveBeenCalledTimes(1);
+    expect(cbRepeat).toHaveBeenCalledTimes(2);
+    expect(cbFinish).toHaveBeenCalledTimes(1);
+  });
 
-        expect(finishCb).toHaveBeenCalledWith(obj, true);
+  test("delay", () => {
+    const obj = { x: 0, y: 0 };
+    const tween = Tween.make(obj)
+      .to({
+        x: 10,
+      })
+      .duration(1000)
+      .delay(500);
+
+    expect(tween.delay()).toEqual(500);
+
+    const cbStart = vi.fn().mockImplementation((o) => {
+      expect(o.x).toEqual(0);
     });
+    tween.onStart(cbStart);
 
-    test('basic', () => {
-        const obj = { x: 0, y: 0 };
-        const tween = Tween.make(obj);
-        expect(tween).toBeInstanceOf(Tween.Tween);
+    tween.start();
+    expect(tween.isRunning()).toBeTruthy();
 
-        tween
-            .to({
-                x: 10,
-            })
-            .duration(1000);
+    expect(cbStart).not.toHaveBeenCalled();
 
-        expect(tween._goal.x).toEqual(10);
-        expect(tween._start.x).toEqual(0);
-        expect(tween.duration()).toEqual(1000);
+    tween.update(100);
+    expect(cbStart).not.toHaveBeenCalled();
+    tween.update(100);
+    expect(cbStart).not.toHaveBeenCalled();
+    tween.update(100);
+    expect(cbStart).not.toHaveBeenCalled();
+    tween.update(100);
+    expect(cbStart).not.toHaveBeenCalled();
+    expect(tween.isRunning()).toBeTruthy();
 
-        expect(tween.isRunning()).toBeFalsy();
-        tween.start();
-        expect(tween.isRunning()).toBeTruthy();
+    tween.update(100);
+    expect(cbStart).toHaveBeenCalled();
+    expect(tween.isRunning()).toBeTruthy();
 
-        tween.update(50);
-        expect(obj.x).toEqual(1);
-        tween.update(50);
-        expect(obj.x).toEqual(1);
-        tween.update(400);
-        expect(obj.x).toEqual(5);
-        tween.update(500);
-        expect(obj.x).toEqual(10);
+    while (tween.isRunning()) {
+      tween.update(50);
+    }
 
-        expect(tween.isRunning()).toBeFalsy();
-    });
+    expect(obj.x).toEqual(10);
+  });
 
-    test('update', () => {
-        const obj = { x: 0, y: 0 };
-        const updateCb = jest.fn();
-        const tween = Tween.make(obj)
-            .to({
-                x: 10,
-            })
-            .duration(1000)
-            .onUpdate(updateCb);
-        tween.start();
+  test("repeatDelay", () => {
+    const obj = { x: 0, y: 0 };
+    const tween = Tween.make(obj)
+      .to({
+        x: 10,
+      })
+      .duration(1000)
+      .delay(0)
+      .repeat(3)
+      .repeatDelay(500);
+    tween.start();
 
-        while (tween.isRunning()) {
-            tween.update(50);
-        }
+    expect(tween.repeatDelay()).toEqual(500);
 
-        // only called when there is a change
-        expect(updateCb).toHaveBeenCalledTimes(10);
-    });
+    let totalTime = 0;
+    while (tween.isRunning()) {
+      tween.update(100);
+      totalTime += 100;
+    }
 
-    test('start twice', () => {
-        const obj = { x: 0, y: 0 };
-        const tw = Tween.make(obj).to({ x: 10 }).duration(100);
-        tw.start();
+    expect(totalTime).toEqual(0 + 1000 + 500 + 1000 + 500 + 1000);
+  });
 
-        while (tw.isRunning()) {
-            tw.update(50);
-        }
+  test("yoyo", () => {
+    const obj = { x: 0, y: 0 };
+    const tween = Tween.make(obj)
+      .to({
+        x: 10,
+      })
+      .duration(1000)
+      .repeat(2)
+      .yoyo(true);
+    tween.start();
 
-        expect(obj.x).toEqual(10);
+    expect(tween.yoyo()).toBeTruthy();
 
-        obj.x = 20;
-        tw.start();
+    while (tween.isRunning()) {
+      tween.update(100);
+    }
 
-        while (tw.isRunning()) {
-            tw.update(50);
-        }
+    // end up back where we started
+    expect(obj.x).toEqual(0);
+  });
 
-        expect(obj.x).toEqual(10);
-    });
+  test("from", () => {
+    const obj = { x: 0, y: 0 };
+    const tween = Tween.make(obj)
+      .from({
+        x: 10,
+      })
+      .duration(1000);
+    tween.start();
 
-    test('repeat', () => {
-        const obj = { x: 0, y: 0 };
-        const tween = Tween.make(obj);
-        expect(tween).toBeInstanceOf(Tween.Tween);
+    expect(tween.isRunning()).toBeTruthy();
+    expect(obj.x).toEqual(10);
 
-        tween
-            .to({
-                x: 10,
-            })
-            .duration(1000)
-            .repeat(3);
+    tween.update(50);
+    expect(obj.x).toEqual(10);
+    tween.update(50);
+    expect(obj.x).toEqual(9);
+    tween.update(400);
+    expect(obj.x).toEqual(5);
+    tween.update(500);
+    expect(obj.x).toEqual(0);
 
-        expect(tween.repeat()).toEqual(3);
+    expect(tween.isRunning()).toBeFalsy();
+  });
 
-        const cbStart = jest.fn().mockImplementation((o) => {
-            expect(o.x).toEqual(0);
-        });
-        tween.onStart(cbStart);
+  test("blink - boolean", () => {
+    const obj = { visible: true };
+    const tween = Tween.make(obj)
+      .to({ visible: false })
+      .repeat(3)
+      .repeatDelay(100)
+      .duration(100);
+    tween.start();
 
-        const cbRepeat = jest.fn().mockImplementation((o) => {
-            expect(o.x).toEqual(0); // resets to starting value
-        });
-        tween.onRepeat(cbRepeat);
+    expect(tween.isRunning()).toBeTruthy();
+    expect(obj.visible).toBeTrue();
 
-        const cbFinish = jest.fn().mockImplementation((o) => {
-            expect(o.x).toEqual(10);
-        });
-        tween.onFinish(cbFinish);
+    // Repeat 1
+    tween.update(90);
+    expect(obj.visible).toBeTrue();
+    tween.update(10);
+    expect(obj.visible).toBeFalse();
 
-        tween.start();
-        while (tween.isRunning()) {
-            tween.update(100);
-        }
+    // Delay 1
+    tween.update(90);
+    expect(obj.visible).toBeFalse();
+    tween.update(10);
+    expect(obj.visible).toBeTrue();
 
-        expect(cbStart).toHaveBeenCalledTimes(1);
-        expect(cbRepeat).toHaveBeenCalledTimes(2);
-        expect(cbFinish).toHaveBeenCalledTimes(1);
-    });
+    // Repeat 2
+    tween.update(90);
+    expect(obj.visible).toBeTrue();
+    tween.update(10);
+    expect(obj.visible).toBeFalse();
 
-    test('delay', () => {
-        const obj = { x: 0, y: 0 };
-        const tween = Tween.make(obj)
-            .to({
-                x: 10,
-            })
-            .duration(1000)
-            .delay(500);
+    // Delay 2
+    tween.update(90);
+    expect(obj.visible).toBeFalse();
+    tween.update(10);
+    expect(obj.visible).toBeTrue();
 
-        expect(tween.delay()).toEqual(500);
+    // Repeat 3
+    tween.update(90);
+    expect(obj.visible).toBeTrue();
+    tween.update(10);
+    expect(obj.visible).toBeFalse();
 
-        const cbStart = jest.fn().mockImplementation((o) => {
-            expect(o.x).toEqual(0);
-        });
-        tween.onStart(cbStart);
+    // done
+    expect(tween.isRunning()).toBeFalsy();
+  });
 
-        tween.start();
-        expect(tween.isRunning()).toBeTruthy();
+  test("child tween", () => {
+    const obj = { a: 0, b: 0 };
+    const tweenA = Tween.make(obj).to({ a: 100 }).duration(500);
+    tweenA.start();
 
-        expect(cbStart).not.toHaveBeenCalled();
+    const tweenB = Tween.make(obj).to({ b: 100 }).duration(1000);
+    tweenA.addChild(tweenB.start());
 
-        tween.update(100);
-        expect(cbStart).not.toHaveBeenCalled();
-        tween.update(100);
-        expect(cbStart).not.toHaveBeenCalled();
-        tween.update(100);
-        expect(cbStart).not.toHaveBeenCalled();
-        tween.update(100);
-        expect(cbStart).not.toHaveBeenCalled();
-        expect(tween.isRunning()).toBeTruthy();
+    while (tweenA.isRunning()) {
+      tweenA.update(50);
+    }
 
-        tween.update(100);
-        expect(cbStart).toHaveBeenCalled();
-        expect(tween.isRunning()).toBeTruthy();
-
-        while (tween.isRunning()) {
-            tween.update(50);
-        }
-
-        expect(obj.x).toEqual(10);
-    });
-
-    test('repeatDelay', () => {
-        const obj = { x: 0, y: 0 };
-        const tween = Tween.make(obj)
-            .to({
-                x: 10,
-            })
-            .duration(1000)
-            .delay(0)
-            .repeat(3)
-            .repeatDelay(500);
-        tween.start();
-
-        expect(tween.repeatDelay()).toEqual(500);
-
-        let totalTime = 0;
-        while (tween.isRunning()) {
-            tween.update(100);
-            totalTime += 100;
-        }
-
-        expect(totalTime).toEqual(0 + 1000 + 500 + 1000 + 500 + 1000);
-    });
-
-    test('yoyo', () => {
-        const obj = { x: 0, y: 0 };
-        const tween = Tween.make(obj)
-            .to({
-                x: 10,
-            })
-            .duration(1000)
-            .repeat(2)
-            .yoyo(true);
-        tween.start();
-
-        expect(tween.yoyo()).toBeTruthy();
-
-        while (tween.isRunning()) {
-            tween.update(100);
-        }
-
-        // end up back where we started
-        expect(obj.x).toEqual(0);
-    });
-
-    test('from', () => {
-        const obj = { x: 0, y: 0 };
-        const tween = Tween.make(obj)
-            .from({
-                x: 10,
-            })
-            .duration(1000);
-        tween.start();
-
-        expect(tween.isRunning()).toBeTruthy();
-        expect(obj.x).toEqual(10);
-
-        tween.update(50);
-        expect(obj.x).toEqual(10);
-        tween.update(50);
-        expect(obj.x).toEqual(9);
-        tween.update(400);
-        expect(obj.x).toEqual(5);
-        tween.update(500);
-        expect(obj.x).toEqual(0);
-
-        expect(tween.isRunning()).toBeFalsy();
-    });
-
-    test('blink - boolean', () => {
-        const obj = { visible: true };
-        const tween = Tween.make(obj)
-            .to({ visible: false })
-            .repeat(3)
-            .repeatDelay(100)
-            .duration(100);
-        tween.start();
-
-        expect(tween.isRunning()).toBeTruthy();
-        expect(obj.visible).toBeTrue();
-
-        // Repeat 1
-        tween.update(90);
-        expect(obj.visible).toBeTrue();
-        tween.update(10);
-        expect(obj.visible).toBeFalse();
-
-        // Delay 1
-        tween.update(90);
-        expect(obj.visible).toBeFalse();
-        tween.update(10);
-        expect(obj.visible).toBeTrue();
-
-        // Repeat 2
-        tween.update(90);
-        expect(obj.visible).toBeTrue();
-        tween.update(10);
-        expect(obj.visible).toBeFalse();
-
-        // Delay 2
-        tween.update(90);
-        expect(obj.visible).toBeFalse();
-        tween.update(10);
-        expect(obj.visible).toBeTrue();
-
-        // Repeat 3
-        tween.update(90);
-        expect(obj.visible).toBeTrue();
-        tween.update(10);
-        expect(obj.visible).toBeFalse();
-
-        // done
-        expect(tween.isRunning()).toBeFalsy();
-    });
-
-    test('child tween', () => {
-        const obj = { a: 0, b: 0 };
-        const tweenA = Tween.make(obj).to({ a: 100 }).duration(500);
-        tweenA.start();
-
-        const tweenB = Tween.make(obj).to({ b: 100 }).duration(1000);
-        tweenA.addChild(tweenB.start());
-
-        while (tweenA.isRunning()) {
-            tweenA.update(50);
-        }
-
-        expect(tweenA.isRunning()).toBeFalsy();
-        expect(tweenB.isRunning()).toBeFalsy();
-    });
+    expect(tweenA.isRunning()).toBeFalsy();
+    expect(tweenB.isRunning()).toBeFalsy();
+  });
 });

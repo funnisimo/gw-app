@@ -1,10 +1,11 @@
 import { Mock, vi } from "vitest";
 
 // import { Random } from '../ts/random';
-import { Buffer } from "../ts/buffer";
-import * as Glyphs from "../ts/glyphs";
-import * as Canvas from "../ts/canvas";
-import * as Color from "../ts/color";
+import { Buffer } from "gw-canvas/buffer.js";
+import * as Glyphs from "gw-canvas/glyphs.js";
+import * as Canvas from "gw-canvas/canvas.js";
+import * as Color from "gw-canvas/color.js";
+import * as IO from "../ts/app/io.js";
 // import * as Layer from '../ts/ui/layer';
 // import * as WidgetLayer from '../ts/widget/layer';
 // import * as UI from '../ts/ui/ui';
@@ -178,39 +179,39 @@ export function getBufferBg(buffer: Buffer, x: number, y: number): Color.Color {
   return data.bg;
 }
 
-// export function keypress(key: string): IO.Event {
-//   let code = "Key" + key.toUpperCase();
-//   if (key.length > 1) {
-//     code = key;
-//   } else if (key >= "0" && key <= "9") {
-//     code = "Digit" + key;
-//   }
+export function keypress(key: string): IO.Event {
+  let code = "Key" + key.toUpperCase();
+  if (key.length > 1) {
+    code = key;
+  } else if (key >= "0" && key <= "9") {
+    code = "Digit" + key;
+  }
 
-//   return IO.makeKeyEvent({
-//     key,
-//     code,
-//   } as KeyboardEvent);
-// }
+  return IO.makeKeyEvent({
+    key,
+    code,
+  } as KeyboardEvent);
+}
 
-// export function dir(name: "up" | "down" | "left" | "right"): IO.Event {
-//   return IO.makeKeyEvent({
-//     key: "arrow" + name,
-//     code: "ARROW" + name.toUpperCase(),
-//   } as KeyboardEvent);
-// }
+export function dir(name: "up" | "down" | "left" | "right"): IO.Event {
+  return IO.makeKeyEvent({
+    key: "arrow" + name,
+    code: "ARROW" + name.toUpperCase(),
+  } as KeyboardEvent);
+}
 
-// export function click(x: number, y: number): IO.Event {
-//   return IO.makeMouseEvent({ buttons: 1 } as MouseEvent, x, y);
-// }
+export function click(x: number, y: number): IO.Event {
+  return IO.makeMouseEvent({ buttons: 1 } as MouseEvent, x, y);
+}
 
-// export function mousemove(x: number, y: number): IO.Event {
-//   return IO.makeMouseEvent({} as MouseEvent, x, y);
-// }
+export function mousemove(x: number, y: number): IO.Event {
+  return IO.makeMouseEvent({} as MouseEvent, x, y);
+}
 
-// export function tick(dt = 16): IO.Event {
-//   return IO.makeTickEvent(dt);
-// }
+export function tick(dt = 16): IO.Event {
+  return IO.makeTickEvent(dt);
+}
 
-// export async function wait(dt = 1): Promise<void> {
-//   await new Promise((resolve) => setTimeout(resolve, dt));
-// }
+export async function wait(dt = 1): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, dt));
+}
